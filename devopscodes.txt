@@ -1,0 +1,438 @@
+Simulated dataset with unique instances:
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Scanner;
+import java.util.Set;
+
+public class SimulatedDatasetUserIn{
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter the number of attributes: ");
+        int numAttributes = sc.nextInt();
+        sc.nextLine(); // Consume the newline character
+
+        String[] attributeNames = new String[numAttributes];
+
+        for (int i = 0; i < numAttributes; i++) {
+            System.out.println("\nAttribute " + (i + 1) + ":");
+            System.out.print("Enter attribute name: ");
+            attributeNames[i] = sc.nextLine();
+        }
+
+        System.out.print("Enter the dataset size: ");
+        int datasetSize = sc.nextInt();
+
+        // Generate the dataset
+        String[][] dataset = inputDataset(numAttributes, datasetSize, attributeNames);
+
+        // Save the dataset to a CSV file
+        saveDatasetToCSV(dataset, attributeNames, "dataset.csv");
+
+        System.out.println("Dataset saved to 'dataset.csv'");
+    }
+
+    public static String[][] inputDataset(int numAttributes, int datasetSize, String[] attributeNames) {
+        
+        String[][] dataset = new String[datasetSize][numAttributes];
+        Set<String> uniqueDataPoints = new HashSet<>();
+        Scanner sc = new Scanner(System.in);
+
+        for (int i = 0; i < datasetSize; i++) {
+            String[] dataPoint = new String[numAttributes];
+            boolean isUnique = false;
+            System.out.println("\nTuple" + (i + 1) + ":");
+            
+            while (!isUnique) {
+                for (int j = 0; j < numAttributes; j++) {
+                        System.out.print("Enter "+ attributeNames[j]+" value: ");
+                        dataPoint[j] = sc.nextLine();
+                }
+                String dataPointString = String.join(",", dataPoint);
+
+                // Check if the data point is unique
+                if (!uniqueDataPoints.contains(dataPointString)) {
+                    isUnique = true;
+                    uniqueDataPoints.add(dataPointString);
+                    dataset[i] = dataPoint;
+                }
+                else{
+                    System.out.println("Tuple is repeated! Please re-enter.");
+                }
+            }
+        }
+
+        return dataset;
+    }
+
+    public static void saveDatasetToCSV(String[][] dataset, String[] attributeNames, String fileName) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            // Write the attribute names as the header
+            for (int i = 0; i < attributeNames.length; i++) {
+                writer.write(attributeNames[i]);
+                if (i < attributeNames.length - 1) {
+                    writer.write(",");
+                }
+            }
+            writer.newLine();
+
+            // Write the dataset values
+            for (String[] row : dataset) {
+                for (int i = 0; i < row.length; i++) {
+                    writer.write(row[i]);
+                    if (i < row.length - 1) {
+                        writer.write(",");
+                    }
+                }
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+Apriori python:
+from itertools import combinations
+
+# Function to print support values in the desired format
+def print_lk(lk):
+    for itemset_size, itemsets in enumerate(lk, start=1):
+        for item, support_value in itemsets.items():
+            itemset_label = f"['l{item}']"
+            print(f"{itemset_label}: {support_value}")
+        print()
+DATASET = ((1,2),(1,3,4),(2,5,7),(1,2,3),(2,3,5,6))
+MIN_SUPPORT =2
+MIN_CONFIDENCE = 50.0
+# Init the 1st candidate set (c1)
+c1=dict()
+
+#Compute c1(individual item count)
+for itemset in DATASET:
+    for i in itemset:
+        c1[i] =c1.get(i,0)+1
+for item in list(c1):
+    if c1[item]<MIN_SUPPORT:
+        del c1[item]
+
+#init list of induvidual item sets(LK) from pruned c1
+LK=[c1]
+
+#Get the individual items from c1
+items = list(c1.keys())
+
+#calc freq itemsets using apriori algorithm
+
+for i in range(2,len(items)):
+    s=dict()
+    for combo in combinations(items,i):
+        for itemset in DATASET:
+            #Check if he current combination is subset of itemset
+            if set(combo).issubset(itemset):
+                s[combo] = s.get(combo,0)+1
+        #Prune the generated combination if its suppor is below the minimum
+        if s.get(combo) and s[combo] < MIN_SUPPORT:
+            del s[combo]
+    #break the loop if no more freq sets of size i are found
+    if not s:
+        break
+    LK.append(s)
+
+#print support values of frequent itemsets
+print("Frequent item sets: ")
+print_lk(LK)
+
+#Generate association rules
+rule = dict()
+for combo in LK[-1]:
+    for item in combo:
+        c = list(combo)
+        c.remove(item)
+        len_c = len(c)
+        c = c[0] if len_c == 1 else tuple(c)
+        # Calculate rule confidences
+        rule_1 = LK[-1][combo] / LK[0][item] * 100
+        rule_2 = LK[-1][combo] / LK[len_c - 1][c] * 100
+        # Add rules to the dictionary if they meet the minimum confidence
+        if rule_1 >= MIN_CONFIDENCE:
+            rule[f"{item}->{c}"] = rule_1
+        if rule_2 >= MIN_CONFIDENCE:
+            rule[f"{c}->{item}"] = rule_2
+#Print the generated association rules
+print("Generated association rules :")
+for rule,confidence in rule.items():
+    print(f"Rule:{rule} | Confidence:{confidence:.2f}%")
+
+Chi square test:
+import scipy.stats as stats
+import seaborn as sns
+import pandas as pd
+import numpy as np
+from scipy.stats import chi2_contingency
+
+dataset=sns.load_dataset('tips')
+
+dataset.head()
+dataset_table=pd.crosstab(dataset['sex'],dataset['smoker'])
+print(dataset_table)
+
+dataset_table.values
+
+observed_values=dataset_table.values
+print("observed values=\n",observed_values)
+val=chi2_contingency(dataset_table)
+Expected_values=val[3]
+
+no_of_rows=len(dataset_table.iloc[0:2,0])
+no_of_cols=len(dataset_table.iloc[0,0:2])
+ddof=(no_of_rows-1)*(no_of_cols-1)
+print("degree of freedom",ddof)
+alpha=0.05
+
+from scipy.stats import chi2
+
+chi_square=sum([(o-e)**2./e for o,e in zip(observed_values,Expected_values)])
+chi_square_statistic=chi_square[0]+chi_square[1]
+print(chi_square_statistic)
+
+critical_value=chi2.ppf(q=1-alpha,df=ddof)
+print("critical value",critical_value)
+if chi_square_statistic>=critical_value:
+    print("reject H0")
+else:
+    print("accept H0")
+
+Naïve bayes:
+import pandas as pd
+from sklearn.naive_bayes import CategoricalNB
+
+# Load the training data from a CSV file
+train_data = pd.read_csv('C:\\Users\\HP\\OneDrive\\Desktop\\ox\\training_data.csv')
+
+# Load the testing data from an Excel file
+test_data = pd.read_csv('C:\\Users\\HP\\OneDrive\\Desktop\\ox\\testing_data.csv')
+
+# Create a function to count instances and display in the desired format
+def count_instances(attribute, data):
+    count = data.groupby([attribute, 'played_football(yes/no)']).size().unstack(fill_value=0)
+    count['Total'] = count['no'] + count['yes']
+    return count
+
+# Calculate counts for each attribute in the training data
+train_outlook_count = count_instances('outlook', train_data)
+train_temp_count = count_instances('temp', train_data)
+train_humidity_count = count_instances('humidity', train_data)
+train_wind_count = count_instances('wind', train_data)
+
+# Function to print the counts in the desired format
+def print_counts(counts, attribute):
+    print(f"{attribute.capitalize()}:")
+    print(counts)
+    print()
+
+# Print the counts in the desired format for the training data
+print("Counts of different instances with respect to 'played_football' attribute in training data:")
+print_counts(train_outlook_count, 'outlook')
+print_counts(train_temp_count, 'temperature')
+print_counts(train_humidity_count, 'humidity')
+print_counts(train_wind_count, 'wind')
+
+# Split the training data into features and the target variable
+X_train = train_data[['outlook', 'temp', 'humidity', 'wind']]
+y_train = train_data['played_football(yes/no)']
+
+# One-hot encode categorical features for both training and testing data
+X_train_encoded = pd.get_dummies(X_train)
+
+# Train a Categorical Naive Bayes classifier
+clf = CategoricalNB()
+clf.fit(X_train_encoded, y_train)
+
+# Define feature names used for training
+feature_names = X_train_encoded.columns
+
+# One-hot encode categorical features for the testing data using the same feature names
+X_test = test_data[['outlook', 'temp', 'humidity', 'wind']]
+X_test_encoded = pd.get_dummies(X_test)
+X_test_encoded = X_test_encoded.reindex(columns=feature_names, fill_value=0)
+
+# Predict for the testing data
+predictions = clf.predict(X_test_encoded)
+
+# Print the predictions for the testing data
+print("\nPredicted values for the testing data:")
+print(predictions)
+
+Simple Kmeans using java:
+import java.util.*;
+import java.io.*;
+import java.lang.*;
+public class KMeans {
+
+    public static void main(String[] args) {
+        double[] x = {2, 5, 8, 1, 2, 6, 3, 8}; // X-coordinates of data points
+        double[] y = {3, 6, 7, 4, 2, 7, 4, 6}; // Y-coordinates of data points
+        int n = 0;
+        boolean flag;
+        double m1x, m1y, m2x, m2y;
+
+        m1x = x[0];
+        m1y = y[0];
+        m2x = x[1];
+        m2y = y[1];
+
+        do {
+            double sum1x = 0, sum1y = 0, sum2x = 0, sum2y = 0;
+            int k = 0, j = 0;
+
+            double[] cluster1x = new double[x.length];
+            double[] cluster1y = new double[y.length];
+            double[] cluster2x = new double[x.length];
+            double[] cluster2y = new double[y.length];
+
+            n++;
+
+            for (int i = 0; i < x.length; i++) {
+                double dist1 = Math.sqrt(Math.pow(x[i] - m1x, 2) + Math.pow(y[i] - m1y, 2));
+                double dist2 = Math.sqrt(Math.pow(x[i] - m2x, 2) + Math.pow(y[i] - m2y, 2));
+
+                if (dist1 <= dist2) {
+                    cluster1x[k] = x[i];
+                    cluster1y[k] = y[i];
+                    k++;
+                } else {
+                    cluster2x[j] = x[i];
+                    cluster2y[j] = y[i];
+                    j++;
+                }
+            }
+
+            for (int i = 0; i < k; i++) {
+                sum1x += cluster1x[i];
+                sum1y += cluster1y[i];
+            }
+
+            for (int i = 0; i < j; i++) {
+                sum2x += cluster2x[i];
+                sum2y += cluster2y[i];
+            }
+
+            double prevM1x = m1x;
+            double prevM1y = m1y;
+            double prevM2x = m2x;
+            double prevM2y = m2y;
+
+            m1x = sum1x / k;
+            m1y = sum1y / k;
+            m2x = sum2x / j;
+            m2y = sum2y / j;
+
+            flag = !(m1x == prevM1x && m1y == prevM1y && m2x == prevM2x && m2y == prevM2y);
+
+        } while (flag);
+
+        // Print final centroids for cluster 1 and cluster 2
+        System.out.println("Final Centroid for Cluster 1: (" + m1x + ", " + m1y + ")");
+        System.out.println("Final Centroid for Cluster 2: (" + m2x + ", " + m2y + ")");
+    }
+}
+
+Simple kmeans python:
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+data_points = np.array([(2, 3), (5, 6), (8, 7), (1, 4), (2, 2), (6, 7), (3, 4), (8, 6)])
+num_clusters = 3
+kmeans = KMeans(n_clusters=num_clusters)
+kmeans.fit(data_points)
+cluster_labels = kmeans.labels_
+centroids = kmeans.cluster_centers_
+plt.figure(figsize=(8, 6))
+for i in range(num_clusters):
+    plt.scatter(data_points[cluster_labels == i, 0], data_points[cluster_labels == i, 1], label=f'Cluster {i+1}')
+plt.scatter(centroids[:, 0], centroids[:, 1], marker='X', s=200, c='black', label='Centroids')
+plt.xlabel('X-axis')
+plt.ylabel('Y-axis')
+plt.title('K-means Clustering')
+plt.legend()
+plt.show()
+
+Histogram:
+from matplotlib import pyplot as plt
+import numpy as np
+# Creating dataset
+a = np.array([22, 87, 5, 43, 56,
+              73, 55, 54, 11,
+              20, 51, 5, 79, 31,
+              27])
+# Creating histogram
+fig, ax = plt.subplots(figsize =(10, 7))
+#ax.hist(a, bins = [0, 25, 50, 75, 100])
+ax.hist(a, bins=[0, 25, 50, 75, 100], density=False, weights=None, cumulative=False, 
+        bottom=None, histtype='bar', align='mid', orientation='vertical', rwidth=None, 
+        log=False, color=None, label=None, stacked=False,data=None)
+# Show plot
+plt.show()
+
+Pie chart:
+#Pie chart
+# Import libraries
+from matplotlib import pyplot as plt
+import numpy as np
+#Creating dataset
+cars = ['AUDI','BMW','FORD','TESLA','JAGUAR','MERCEDES']
+data = [23, 17, 35, 29, 12, 41]
+# Creating plot
+fig = plt.figure(figsize =(10, 7))
+plt.pie(data, labels = cars)
+# show plot
+plt.show()
+
+Bar graph:
+#Bar graph
+import numpy as np
+import matplotlib.pyplot as plt  
+# creating the dataset
+data = {'C':20, 'C++':15, 'Java':30,
+       'Python':35}
+courses = list(data.keys())
+values = list(data.values())
+fig = plt.figure(figsize = (10, 5))
+# creating the bar plot
+plt.bar(courses, values, color ='blue',
+        width = 0.4)
+ 
+plt.xlabel("Courses offered")
+plt.ylabel("No. of students enrolled")
+plt.title("Students enrolled in different courses")
+plt.show()
+
+Box plot:
+#Box plot
+# Import libraries
+import matplotlib.pyplot as plt
+import numpy as np 
+# Creating dataset
+np.random.seed(10)
+data = np.random.normal(100, 20, 200)
+fig = plt.figure(figsize =(10, 7))
+# Creating plot
+plt.boxplot(data) 
+# show plot
+plt.show()
+
+Scatter plot:
+#Scatter plot
+import matplotlib.pyplot as plt
+import numpy as np
+x = np.random.randint(100, size=(100))
+y = np.random.randint(100, size=(100))
+colors = np.random.randint(100, size=(100))
+sizes = 10 * np.random.randint(100, size=(100))
+plt.scatter(x, y, c=colors, s=sizes, alpha=0.5, cmap='nipy_spectral')
+plt.colorbar()
+plt.show()
